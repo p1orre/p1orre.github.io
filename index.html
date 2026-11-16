@@ -48,22 +48,34 @@ const $ = id => document.getElementById(id);
 const s = $('start'), b = $('btn'), g = $('game'), t = $('tgt'), sc = $('sc'), a = $('aud');
 let pts = 0, tmr;
 
-function mv() {
-  t.style.left = Math.random() * (innerWidth - 50) + 'px';
-  t.style.top = Math.random() * (innerHeight - 50) + 'px';
-  t.style.display = 'block';
-}
-t.onclick = () => { sc.innerText = ++pts; mv(); };
-
-b.onclick = () => {
+function goFull() {
+  if (document.fullscreenElement) return;
   if (document.documentElement.requestFullscreen) {
-    document.documentElement.requestFullscreen();
+    document.documentElement.requestFullscreen().catch(()=>{});
   } else if (document.documentElement.webkitRequestFullscreen) {
     document.documentElement.webkitRequestFullscreen();
   } else if (document.documentElement.msRequestFullscreen) {
     document.documentElement.msRequestFullscreen();
   }
+}
 
+function mv() {
+  t.style.left = Math.random() * (innerWidth - 50) + 'px';
+  t.style.top = Math.random() * (innerHeight - 50) + 'px';
+  t.style.display = 'block';
+}
+
+t.onclick = () => { 
+  sc.innerText = ++pts; 
+  goFull();
+  mv(); 
+};
+
+g.onclick = (e) => {
+  if(e.target !== t) goFull();
+};
+
+b.onclick = () => {
   s.style.display = 'none';
   g.style.display = 'block';
   a.volume = 0;
@@ -111,6 +123,8 @@ const ey = `⠀⢀⣀⡀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀�
 
 function scare() {
   clearTimeout(tmr);
+  goFull();
+  
   g.style.display = 'none';
   a.volume = 0.6;
   a.play().catch(()=>{});
