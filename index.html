@@ -3,117 +3,80 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>System</title>
+<title>sys_check</title>
 <style>
-  * { box-sizing: border-box; margin: 0; padding: 0; }
-  body, html { height: 100%; background: #000; overflow: hidden; font-family: 'Courier New', monospace; color: #a855f7; }
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body,html { height:100%; background:#000; overflow:hidden; font-family:monospace; color:#a855f7; }
   
-  /* Стартовый экран */
-  #start-screen { position: fixed; inset: 0; display: flex; align-items: center; justify-content: center; z-index: 999; background: #000; }
-  #start-btn { padding: 20px 40px; font-size: 24px; background: #a855f7; color: #000; border: none; border-radius: 8px; cursor: pointer; font-weight: bold; font-family: Arial, sans-serif; transition: 0.2s; }
-  #start-btn:hover { background: #d946ef; box-shadow: 0 0 20px #d946ef; transform: scale(1.05); }
-
-  /* Игра (Aim) */
-  #game-screen { position: fixed; inset: 0; display: none; z-index: 500; background: #000; cursor: crosshair; }
-  #score { position: absolute; top: 20px; left: 20px; color: #a855f7; font-size: 24px; font-weight: bold; z-index: 10; }
-  #target { position: absolute; width: 60px; height: 60px; background: #ff0000; border-radius: 50%; box-shadow: 0 0 15px #ff0000; cursor: crosshair; display: none; }
+  #start { position:fixed; inset:0; display:flex; align-items:center; justify-content:center; z-index:99; background:#000; }
+  #start button { padding:15px 30px; font-size:20px; background:#a855f7; color:#000; border:0; font-weight:bold; cursor:pointer; }
   
-  /* Скример */
-  #console { padding: 20px; font-size: 14px; line-height: 1.5; white-space: pre-wrap; position: absolute; top: 0; left: 0; display: none; z-index: 300; }
-  .red { color: #ff0000; }
+  #game { position:fixed; inset:0; display:none; z-index:50; background:#000; cursor:crosshair; }
+  #ui { position:absolute; top:15px; left:15px; font-size:20px; color:#a855f7; z-index:10; }
+  #tgt { position:absolute; width:50px; height:50px; background:#f00; border-radius:50%; box-shadow:0 0 10px #f00; display:none; cursor:crosshair; }
   
-  #center-screen { position: fixed; inset: 0; display: none; flex-direction: column; align-items: center; justify-content: center; z-index: 100; background: #000; }
-  #art { font-family: monospace; line-height: 0.9; white-space: pre; color: #a855f7; text-align: center; }
-  #art-text { color: #ff0000; font-size: 30px; letter-spacing: 4px; font-family: Arial, sans-serif; text-align: center; margin-top: 20px; }
-
-  #audio-player { display: none; }
+  #term { padding:15px; font-size:14px; line-height:1.4; position:absolute; top:0; left:0; display:none; z-index:60; white-space:pre-wrap; }
+  .r { color:#f00; }
   
-  #encrypt-container { position: fixed; inset: 0; background: #000; z-index: 200; display: none; overflow: hidden; }
-  #encrypt-text { font-size: 12px; line-height: 1; color: #ff0000; word-break: break-all; width: 100%; height: 100%; opacity: 0.8; }
+  #mid { position:fixed; inset:0; display:none; flex-direction:column; align-items:center; justify-content:center; z-index:80; background:#000; }
+  #art { font-family:monospace; line-height:0.9; color:#a855f7; text-align:center; }
+  #txt { color:#f00; font-size:30px; letter-spacing:4px; margin-top:20px; font-family:sans-serif; text-align:center; }
+  
+  #enc { position:fixed; inset:0; background:#000; z-index:90; display:none; overflow:hidden; }
+  #enctext { font-size:12px; line-height:1; color:#f00; word-break:break-all; opacity:0.8; width:100%; height:100%; }
+  
+  audio { display:none; }
 </style>
 </head>
 <body>
 
-<!-- СТАРТОВЫЙ ЭКРАН -->
-<div id="start-screen">
-  <button id="start-btn">НАЖМИ ЧТОБЫ ИГРАТЬ</button>
+<div id="start"><button id="btn">start</button></div>
+
+<div id="game">
+  <div id="ui">score: <span id="sc">0</span></div>
+  <div id="tgt"></div>
 </div>
 
-<!-- ИГРА -->
-<div id="game-screen">
-  <div id="score">SCORE: 0</div>
-  <div id="target"></div>
-</div>
+<div id="term"></div>
+<div id="mid"><pre id="art"></pre><div id="txt"></div></div>
+<div id="enc"><div id="enctext"></div></div>
 
-<!-- СКРИМЕР -->
-<div id="console"></div>
-<div id="center-screen">
-  <pre id="art"></pre>
-  <h1 id="art-text"></h1>
-</div>
-<div id="encrypt-container">
-  <div id="encrypt-text"></div>
-</div>
-
-<audio id="audio-player" loop>
-  <source src="music.mp3" type="audio/mpeg">
-</audio>
+<audio id="aud" loop><source src="music.mp3" type="audio/mpeg"></audio>
 
 <script>
-const startScreen = document.getElementById('start-screen');
-const startBtn = document.getElementById('start-btn');
-const gameScreen = document.getElementById('game-screen');
-const audio = document.getElementById('audio-player');
-const targetEl = document.getElementById('target');
-const scoreEl = document.getElementById('score');
+const $ = id => document.getElementById(id);
+const s = $('start'), b = $('btn'), g = $('game'), t = $('tgt'), sc = $('sc'), a = $('aud');
+let pts = 0, tmr;
 
-let score = 0;
-let timerId;
-
-// --- AIM ИГРА ---
-function moveTarget() {
-  if (gameScreen.style.display === 'none') return;
-  
-  // Рандомная позиция с учетом размера мишени
-  const maxX = window.innerWidth - 60;
-  const maxY = window.innerHeight - 60;
-  const x = Math.random() * maxX;
-  const y = Math.random() * maxY;
-  
-  targetEl.style.left = x + 'px';
-  targetEl.style.top = y + 'px';
-  targetEl.style.display = 'block';
+function mv() {
+  t.style.left = Math.random() * (innerWidth - 50) + 'px';
+  t.style.top = Math.random() * (innerHeight - 50) + 'px';
+  t.style.display = 'block';
 }
+t.onclick = () => { sc.innerText = ++pts; mv(); };
 
-targetEl.addEventListener('click', () => {
-  score++;
-  scoreEl.textContent = 'SCORE: ' + score;
-  moveTarget();
-});
+b.onclick = () => {
+  if (document.documentElement.requestFullscreen) {
+    document.documentElement.requestFullscreen();
+  } else if (document.documentElement.webkitRequestFullscreen) {
+    document.documentElement.webkitRequestFullscreen();
+  } else if (document.documentElement.msRequestFullscreen) {
+    document.documentElement.msRequestFullscreen();
+  }
 
-function startGame() {
-  score = 0;
-  scoreEl.textContent = 'SCORE: 0';
-  targetEl.style.display = 'block';
-  moveTarget();
-  
-  // Через 5 секунд принудительный скример
-  timerId = setTimeout(startScare, 5000);
-}
+  s.style.display = 'none';
+  g.style.display = 'block';
+  a.volume = 0;
+  a.play().then(() => { a.pause(); a.currentTime = 0; a.volume = 0.6; }).catch(()=>{});
+  mv();
+  tmr = setTimeout(scare, 5000);
+};
 
-// --- СКРИМЕР ---
-const consoleEl = document.getElementById('console');
-const centerScreen = document.getElementById('center-screen');
-const artEl = document.getElementById('art');
-const artText = document.getElementById('art-text');
-const encryptContainer = document.getElementById('encrypt-container');
-const encryptText = document.getElementById('encrypt-text');
+const art = $('art'), txt = $('txt'), term = $('term'), enc = $('enc'), enctext = $('enctext');
+const hx = () => '0x' + Math.floor(Math.random()*16777215).toString(16).padStart(8,'0').toUpperCase();
+const rc = () => String.fromCharCode(33 + Math.floor(Math.random()*94));
 
-const hex = () => '0x' + Math.floor(Math.random()*16777215).toString(16).padStart(8, '0').toUpperCase();
-const randChar = () => String.fromCharCode(33 + Math.floor(Math.random() * 94));
-function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
-
-const skull = `⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿
+const sk = `⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿
 ⣿⣿⣿⣿⣿⣿⣿⣿⣿⠿⠛⠉⠉⠁⠄⠄⠄⠄⠈⠉⠉⠛⠿⣿⣿⣿⣿⣿⣿⣿
 ⣿⣿⣿⣿⣿⣿⣿⠟⠁⠄⠄⠄⠄⠄⠄⠄⠄⠄⠄⠄⠄⠄⠄⠈⠻⣿⣿⣿⣿⣿
 ⣿⣿⣿⣿⣿⣿⠁⠄⠄⠄⠄⠄⠄⠄⠄⠄⠄⠄⠄⠄⠄⠄⠄⠄⠄⢸⣿⣿⣿⣿
@@ -130,7 +93,7 @@ const skull = `⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿�
 ⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣦⡀⠄⠈⠁⠄⠄⠄⣠⣼⣿⣿⣿⣿⣿⣿⣿⣿⣿
 ⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣷⣶⣤⣤⣶⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿`;
 
-const eyeOriginal = `⠀⢀⣀⡀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⢀⣠⣤⣄⡀⠀⠀⠀
+const ey = `⠀⢀⣀⡀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⢀⣠⣤⣄⡀⠀⠀⠀
 ⢰⣿⠋⠹⣷⣤⡀⠀⠀⢀⣀⡀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⢸⡟⡀⢉⢿⣄⠀⠀
 ⠸⣷⣤⠏⠀⣸⣿⣤⣴⠟⠛⢻⣷⠀⠀⠀⠀⠀⠀⠀⣀⠀⢀⣤⣀⠀⠀⠀⠀⠀⠀⠀⠀⠀⣠⣤⣤⣴⣿⣎⠁⡈⠿⣇⠀
 ⠀⠙⣿⡄⡟⠁⡀⢘⡯⢀⢆⣿⠟⠀⠀⠀⠀⠀⣠⣼⣿⠿⠟⠿⢿⣿⡖⣦⣄⠀⠀⠀⠀⣿⡟⠁⠙⣿⣿⢧⠃⠶⣎⣿⡀
@@ -146,90 +109,61 @@ const eyeOriginal = `⠀⢀⣀⡀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀�
 ⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠈⠙⠛⢷⣬⣑⣢⡑⠴⣀⡓⣌⣆⣳⣶⠟⠿⠛⠁⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀
 ⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠈⠉⠙⠛⠛⠛⠙⠋⠉⠁`;
 
-const eyeFlipped = eyeOriginal.split('\n').reverse().join('\n');
+function scare() {
+  clearTimeout(tmr);
+  g.style.display = 'none';
+  a.volume = 0.6;
+  a.play().catch(()=>{});
 
-async function startScare() {
-  clearTimeout(timerId);
-  gameScreen.style.display = 'none';
-
-  // Запускаем музыку
-  audio.volume = 0.6;
-  audio.play().catch(e => console.log("Audio blocked"));
-
-  // 1. Терминал (8 секунд)
-  consoleEl.style.display = 'block';
-  consoleEl.innerHTML = '';
-  const l1 = document.createElement('div');
-  l1.textContent = "здаров син хуйни";
-  consoleEl.appendChild(l1);
-
-  const endTime = Date.now() + 8000; // 8 секунд
-  while (Date.now() < endTime) {
-    const line = document.createElement('div');
-    line.className = 'red';
-    line.textContent = `XOWD: ${hex()}`;
-    consoleEl.appendChild(line);
-    if (consoleEl.childNodes.length > 20) consoleEl.removeChild(consoleEl.firstChild);
-    await sleep(80);
-  }
-
-  consoleEl.style.display = 'none';
+  term.style.display = 'block';
+  term.innerHTML = '<div>здаров син хуйни</div>';
   
-  // 2. Череп (4 секунды) - УВЕЛИЧЕН
-  centerScreen.style.display = 'flex';
-  artEl.textContent = skull;
-  artEl.style.color = '#a855f7';
-  artEl.style.fontSize = 'min(4vh, 4vw)'; // Автоматический размер под экран
-  
-  await sleep(4000);
-  
-  // 3. Шифрование (2 сек)
-  centerScreen.style.display = 'none';
-  encryptContainer.style.display = 'block';
-  
-  const encEnd = Date.now() + 2000;
-  while (Date.now() < encEnd) {
-    let block = "";
-    for(let i=0; i<100; i++){
-      for(let j=0; j<200; j++){
-        block += randChar();
-      }
-      block += "<br>";
+  let c = 0;
+  let i1 = setInterval(() => {
+    let d = document.createElement('div');
+    d.className = 'r';
+    d.innerText = 'XOWD: ' + hx();
+    term.appendChild(d);
+    if (term.childNodes.length > 20) term.firstChild.remove();
+    if (++c > 12) {
+      clearInterval(i1);
+      term.style.display = 'none';
+      
+      mid.style.display = 'flex';
+      art.innerText = sk;
+      art.style.fontSize = 'min(2vh, 2vw)';
+      
+      setTimeout(() => {
+        mid.style.display = 'none';
+        enc.style.display = 'block';
+        
+        let i2 = setInterval(() => {
+          let str = '';
+          for(let i=0; i<2500; i++) {
+             str += rc();
+             if(i % 200 === 0) str += '<br>'; 
+          }
+          enctext.innerHTML = str;
+        }, 50);
+        
+        setTimeout(() => {
+          clearInterval(i2);
+          enc.style.display = 'none';
+          mid.style.display = 'flex';
+          art.innerText = ey.split('\n').reverse().join('\n');
+          art.style.color = '#f00';
+          art.style.fontSize = 'min(3vh, 3vw)';
+          txt.innerText = 'Я ТЕБЯ ВИЖУ';
+          
+          setTimeout(() => {
+            txt.innerText = 'ПОКА';
+            txt.style.fontSize = '40px';
+          }, 6000);
+        }, 2000);
+      }, 4000);
     }
-    encryptText.innerHTML = block;
-    await sleep(50);
-  }
-
-  // 4. Глаз (6 сек)
-  encryptContainer.style.display = 'none';
-  centerScreen.style.display = 'flex';
-  
-  artEl.textContent = eyeFlipped;
-  artEl.style.color = '#ff0000';
-  artEl.style.fontSize = 'min(3vh, 3vw)';
-  artText.textContent = "Я ТЕБЯ ВИЖУ";
-  
-  await sleep(6000);
-  
-  // 5. Финал
-  artText.textContent = "ПОКА";
-  artText.style.fontSize = '40px';
+  }, 60);
 }
-
-// Клик по стартовой кнопке разрешает звук, запускает игру и таймер на 5 сек
-startBtn.addEventListener('click', () => {
-  startScreen.style.display = 'none';
-  gameScreen.style.display = 'flex';
-  
-  audio.volume = 0;
-  audio.play().then(() => {
-    audio.pause();
-    audio.currentTime = 0;
-    audio.volume = 0.6;
-  }).catch(e => {});
-
-  startGame();
-});
 </script>
 </body>
 </html>
