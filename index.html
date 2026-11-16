@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>System Error</title>
+<style>
+  *{box-sizing:border-box}
+  html,body{margin:0;height:100%;background:#000;color:#fff;font-family:"Courier New",Courier,monospace;overflow:hidden;cursor:crosshair}
+  #container{position:fixed;inset:0;z-index:1}
+  .line{position:absolute;white-space:nowrap;pointer-events:none;opacity:0;animation:fadeIn 0.1s forwards, glitch 0.1s infinite}
+  @keyframes fadeIn{to{opacity:1}}
+  @keyframes glitch{
+    0%{transform:translate(0)}
+    20%{transform:translate(-1px,1px)}
+    40%{transform:translate(-1px,-1px)}
+    60%{transform:translate(1px,1px)}
+    80%{transform:translate(1px,-1px)}
+    100%{transform:translate(0)}
+  }
+  #finale{position:fixed;inset:0;display:none;align-items:center;justify-content:center;background:#000;z-index:99;text-align:center;flex-direction:column}
+  #finale h1{color:#ff0000;font-size:48px;text-shadow:0 0 20px #ff0000;margin:0;letter-spacing:4px;animation:pulse 0.5s infinite}
+  @keyframes pulse{50%{opacity:0.5}}
+  #sc-player { position: fixed; bottom: -100px; left: -100px; width: 1px; height: 1px; opacity: 0; pointer-events: none; }
+</style>
+</head>
+<body>
+<div id="container"></div>
+<div id="finale">
+  <h1>ПРИВЕТ</h1>
+  <p style="color:#a855f7;margin-top:20px;font-size:20px;">Я вижу тебя.</p>
+  <p style="color:#666;margin-top:10px;font-size:12px;">(это был просто рофлан скример, не ссы)</p>
+</div>
+
+<iframe id="sc-player" allow="autoplay" scrolling="no" frameborder="no" src="https://w.soundcloud.com/player/?url=https%3A//soundcloud.com/lokomotivsquad/ded-rasxuyaril-komp-izza&color=%23a855f7&auto_play=false&hide_related=true&show_comments=false&show_user=false&show_reposts=false&show_teaser=false"></iframe>
+
+<script>
+const container = document.getElementById('container');
+
+// Палитра цветов
+const colors = [
+  '#a855f7', // фиолетовый
+  '#ff0000', // красный
+  '#00ff00', // зеленый
+  '#00ffff', // циан
+  '#ffff00', // желтый
+  '#ff00ff', // маджента
+  '#ffffff', // белый
+  '#ff8800', // оранжевый
+  '#0088ff'  // синий
+];
+
+const phrases = [
+  "Инициализация...", "XDWD: 0x03527737", "XDWD: 0x0266712", "XDWD: 0x014478123",
+  "Поиск уязвимостей...", "Успешно.", "Доступ к камере получен.", "Доступ к микрофону получен.",
+  "Сканирование сети...", "Найдено устройств: 4", "IP: 192.168.1.1", "MAC: A4:2B:B0:8F:11:2C",
+  "Копирование данных...", "Файл: passwords.txt", "Файл: cookies.sqlite", "Файл: history.db",
+  "Копирование 87%", "Копирование 100%", "Передача данных...", "Подключение к C2...",
+  "Соединение установлено.", "Шифрование диска...", "C:\\Windows\\System32", "C:\\Users\\Admin",
+  "Загрузка payload...", "Payload executed.", "Осталось: 00:59", "Осталось: 00:58",
+  "Ты думал это шутка?", "Это не шутка.", "Твой ПК заблокирован.", "Попытка обхода...",
+  "Заблокировано.", "Не выключай.", "Это не поможет.", "Я уже здесь.",
+  "Смотри за экраном.", "Сзади никого нет?", "Уверен?", "Проверь еще раз.",
+  "Система уничтожена.", "Пока.", "0xDEADBEEF", "0xCAFEBABE", "0xFFFFFFFF",
+  "KERNEL_PANIC", "SEGFAULT", "ACCESS_DENIED", "ROOT_ACCESS", "ENCRYPTING...",
+  "syscall 0x3b", "ntdll.dll", "kernel32.dll", "lsass.exe", "svchost.exe",
+  "INJECTING", "HOOKING", "BYPASSING", "OBFUSCATING", "EXFILTRATING"
+];
+
+let index = 0;
+
+function spawnLine(text) {
+  const el = document.createElement('div');
+  el.className = 'line';
+  
+  // Случайный цвет
+  const color = colors[Math.floor(Math.random() * colors.length)];
+  el.style.color = color;
+  el.style.textShadow = `0 0 8px ${color}`;
+  
+  el.textContent = text;
+  
+  // Случайная позиция
+  const top = Math.random() * 95;
+  const left = Math.random() * 85;
+  el.style.top = top + '%';
+  el.style.left = left + '%';
+  
+  // Случайный размер
+  el.style.fontSize = (10 + Math.random() * 10) + 'px';
+  
+  container.appendChild(el);
+  
+  // Ограничение DOM, чтобы не лагало
+  if (container.childNodes.length > 100) {
+    container.removeChild(container.firstChild);
+  }
+}
+
+function loop() {
+  if (index >= phrases.length) {
+    // Бесконечный рандомный шум после основного текста
+    setInterval(() => {
+      const randomHex = '0x' + Math.floor(Math.random()*16777215).toString(16).padStart(8, '0').toUpperCase();
+      spawnLine(randomHex);
+    }, 50);
+    document.getElementById('finale').style.display = 'flex';
+    return;
+  }
+  
+  spawnLine(phrases[index]);
+  index++;
+  
+  // ОЧЕНЬ БЫСТРАЯ задержка (20-150 мс)
+  const delay = Math.random() * 130 + 20;
+  setTimeout(loop, delay);
+}
+
+setTimeout(loop, 500);
+
+// ЗАПУСК МУЗЫКИ (по клику)
+document.body.addEventListener('click', function initAudio() {
+  try {
+    const iframe = document.getElementById('sc-player');
+    iframe.contentWindow.postMessage('{"method":"play"}', '*');
+  } catch(e) {}
+  document.body.removeEventListener('click', initAudio);
+}, {once: true});
+</script>
+</body>
+</html>
